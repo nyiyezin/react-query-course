@@ -10,6 +10,8 @@ export default function IssuesList({ labels, status }) {
     return fetch(`/api/issues?${labelsString}${statusString}`).then((res) => res.json());
   });
 
+  console.log(issuesQuery.data);
+
   return (
     <div>
       <h2>Issues List</h2>
