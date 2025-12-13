@@ -7,31 +7,31 @@ import { worker } from "@uidotdev/react-query-api";
 import { QueryClient, QueryClientProvider } from "react-query";
 
 const queryClinet = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 1000 * 60
-        }
-    }
+	defaultOptions: {
+		queries: {
+			staleTime: 1000 * 60,
+		},
+	},
 });
 
 new Promise((res) => setTimeout(res, 100))
-    .then(() =>
-        worker.start({
-            quiet: true,
-            onUnhandledRequest: "bypass",
-        })
-    )
-    .then(() => {
-        ReactDOM.render(
-            <React.StrictMode>
-                <QueryClientProvider client={queryClinet}>
-                    <BrowserRouter>
-                        <div className="container">
-                            <App />
-                        </div>
-                    </BrowserRouter>
-                </QueryClientProvider>
-            </React.StrictMode>,
-            document.getElementById("root")
-        );
-    });
+	.then(() =>
+		worker.start({
+			quiet: true,
+			onUnhandledRequest: "bypass",
+		}),
+	)
+	.then(() => {
+		ReactDOM.render(
+			<React.StrictMode>
+				<QueryClientProvider client={queryClinet}>
+					<BrowserRouter>
+						<div className="container">
+							<App />
+						</div>
+					</BrowserRouter>
+				</QueryClientProvider>
+			</React.StrictMode>,
+			document.getElementById("root"),
+		);
+	});
