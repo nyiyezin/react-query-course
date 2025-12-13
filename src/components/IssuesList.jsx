@@ -1,6 +1,7 @@
 import { useQuery } from "react-query";
 import { IssueItem } from "./IssueItem";
 import { useState } from "react";
+import fetchWithError from "../helpers/fetchWithError";
 
 export default function IssuesList({ labels, status }) {
     const issuesQuery = useQuery(
@@ -8,9 +9,7 @@ export default function IssuesList({ labels, status }) {
         () => {
             const statusString = status ? `&status=${status}` : "";
             const labelsString = labels.map((label) => `labels[]=${label}`).join("&");
-            return fetch(`/api/issues?${labelsString}${statusString}`).then((res) =>
-                res.json()
-            );
+            return fetchWithError(`/api/issues?${labelsString}${statusString}`);
         },
         {
             staleTime: 1000 * 60,
