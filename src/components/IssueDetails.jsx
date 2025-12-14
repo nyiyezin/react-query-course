@@ -4,6 +4,7 @@ import { useUserData } from "../helpers/useUserData";
 import { IssueHeader } from "./IssueHeader";
 import { relativeDate } from "../helpers/relativeDate";
 import IssueStatus from "./IssueStatus";
+import IssueAssignment from "./IssueAssignment";
 
 function useIssueData(issueNumber) {
 	return useQuery(["issues", issueNumber], ({ signal }) => {
@@ -65,6 +66,10 @@ export default function IssueDetails() {
 						<aside>
 							<IssueStatus
 								status={issueQuery.data.status}
+								issueNumber={issueQuery.data.number.toString()}
+							/>
+							<IssueAssignment
+								assignee={issueQuery.data.assignee}
 								issueNumber={issueQuery.data.number.toString()}
 							/>
 						</aside>
