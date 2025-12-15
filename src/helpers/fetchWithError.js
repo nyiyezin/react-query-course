@@ -1,15 +1,15 @@
 export default async function fetchWithError(url, options) {
-	const res = await fetch(url, options);
+  const res = await fetch(url, options);
 
-	if (res.status === 200) {
-		const result = await res.json();
+  if (res.status === 200) {
+    const result = await res.json();
 
-		if (result.error) {
-			throw new Error(result.error);
-		}
+    if (result.error) {
+      throw new Error(result.error);
+    }
 
-		return result;
-	}
+    return result;
+  }
 
-	throw new Error(`Error ${res.status}: ${res.statusText}`);
+  throw new Error(`Error ${res.status}: ${res.statusText}`);
 }
