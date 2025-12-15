@@ -3,7 +3,7 @@ import { GoIssueOpened, GoIssueClosed, GoComment } from "react-icons/go";
 import { relativeDate } from "../helpers/relativeDate";
 import { useUserData } from "../helpers/useUserData";
 import { Label } from "./Label";
-import { useQueryClient } from "react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import fetchWithError from "../helpers/fetchWithError";
 
 export function IssueItem({
@@ -16,9 +16,9 @@ export function IssueItem({
 	labels,
 	status,
 }) {
+	const queryClient = useQueryClient();
 	const assigneeUser = useUserData(assignee);
 	const createdByUser = useUserData(createdBy);
-	const queryClient = useQueryClient();
 
 	return (
 		<li

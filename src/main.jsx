@@ -4,7 +4,8 @@ import "./index.css";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 import { worker } from "@uidotdev/react-query-api";
-import { QueryClient, QueryClientProvider } from "react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRoot } from "react-dom/client";
 
 const queryClinet = new QueryClient({
 	defaultOptions: {
@@ -14,6 +15,9 @@ const queryClinet = new QueryClient({
 	},
 });
 
+const container = document.getElementById("root");
+const root = createRoot(container);
+
 new Promise((res) => setTimeout(res, 100))
 	.then(() =>
 		worker.start({
@@ -22,7 +26,7 @@ new Promise((res) => setTimeout(res, 100))
 		}),
 	)
 	.then(() => {
-		ReactDOM.render(
+		root.render(
 			<React.StrictMode>
 				<QueryClientProvider client={queryClinet}>
 					<BrowserRouter>
@@ -32,6 +36,5 @@ new Promise((res) => setTimeout(res, 100))
 					</BrowserRouter>
 				</QueryClientProvider>
 			</React.StrictMode>,
-			document.getElementById("root"),
 		);
 	});

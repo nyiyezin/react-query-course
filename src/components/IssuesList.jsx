@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { IssueItem } from "./IssueItem";
 import { useState } from "react";
 import fetchWithError from "../helpers/fetchWithError";
@@ -6,14 +6,13 @@ import Loader from "./Loader";
 
 export default function IssuesList({ labels, status, pageNum, setPageNum }) {
 	const queryClient = useQueryClient();
+	const [searchValue, setSearchValue] = useState("");
 
-	const issuesQuery = useQuery(
-		["issues", { labels, status, pageNum }],
-		async ({ signal }) => {
+	const issuesQuery = useQuery({
+		queryKey: ["issues", { labels, status, pageNum }],
+		queryFn: async ({ signal }) => {
 			const statusString = status ? `&status=${status}` : "";
-
 			const labelsString = labels.map((label) => `labels[]=${label}`).join("&");
-
 			const paginationString = pageNum ? `&page=${pageNum}` : "";
 
 			const results = await fetchWithError(
@@ -27,20 +26,17 @@ export default function IssuesList({ labels, status, pageNum, setPageNum }) {
 
 			return results;
 		},
-		{ keepPreviousData: true },
-	);
+		keepPreviousData: true,
+	});
 
-	const [searchValue, setSearchValue] = useState("");
-
-	const searchQuery = useQuery(
-		["issues", "search", searchValue],
-		({ signal }) => {
-			return fetch(`/api/search/issues?q=${searchValue}`, { signal }).then((res) => res.json());
+	const searchQuery = useQuery({
+		queryKey: ["issues", "search", searchValue],
+		queryFn: async ({ signal }) => {
+			const res = await fetch(`/api/search/issues?q=${searchValue}`, { signal });
+			return res.json();
 		},
-		{
-			enabled: searchValue.length > 0,
-		},
-	);
+		enabled: searchValue.length > 0,
+	});
 
 	return (
 		<div>
@@ -57,16 +53,16 @@ export default function IssuesList({ labels, status, pageNum, setPageNum }) {
 					name="search"
 					id="search"
 					onChange={(event) => {
-						if (event.target.value.length === 0) {
-							setSearchValue("");
-						}
+						if (event.target.value.length === 0) setSearchValue("");
 					}}
 				/>
 			</form>
+
 			<h2>Issues List {issuesQuery.fetchStatus === "fetching" ? <Loader /> : null}</h2>
-			{issuesQuery.isLoading ? (
+
+			{issuesQuery.isPending ? (
 				<p>Loading...</p>
-			) : searchQuery.fetchStatus === "idle" && searchQuery.isLoading === true ? (
+			) : searchQuery.fetchStatus === "idle" && searchQuery.isPending ? (
 				<>
 					<ul className="issues-list">
 						{issuesQuery.data.map((issue) => (
@@ -83,27 +79,26 @@ export default function IssuesList({ labels, status, pageNum, setPageNum }) {
 							/>
 						))}
 					</ul>
+
 					<div className="pagination">
 						<button
-							onClick={() => {
-								if (pageNum - 1 > 0) {
-									setPageNum(pageNum - 1);
-								}
-							}}
+							onClick={() => pageNum - 1 > 0 && setPageNum(pageNum - 1)}
 							disabled={pageNum === 1}
 						>
 							Previous
 						</button>
+
 						<p>
 							Page {pageNum} {issuesQuery.isFetching ? "..." : ""}
 						</p>
+
 						<button
 							disabled={issuesQuery.data?.length === 0 || issuesQuery.isPreviousData}
-							onClick={() => {
-								if (issuesQuery.data?.length !== 0 && !issuesQuery.isPreviousData) {
-									setPageNum(pageNum + 1);
-								}
-							}}
+							onClick={() =>
+								issuesQuery.data?.length !== 0 &&
+								!issuesQuery.isPreviousData &&
+								setPageNum(pageNum + 1)
+							}
 						>
 							Next
 						</button>
@@ -112,7 +107,7 @@ export default function IssuesList({ labels, status, pageNum, setPageNum }) {
 			) : (
 				<>
 					<h2>Search Results</h2>
-					{searchQuery.isLoading ? (
+					{searchQuery.isPending ? (
 						<p>Loading...</p>
 					) : (
 						<>

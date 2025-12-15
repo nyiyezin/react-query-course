@@ -1,40 +1,42 @@
-import { useMutation, useQueryClient } from "react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { StatusSelect } from "./StatusSelect";
 
 export default function IssueStatus({ status, issueNumber }) {
 	const queryClient = useQueryClient();
 
-	const setStatus = useMutation(
-		(status) => {
-			return fetch(`/api/issues/${issueNumber}`, {
+	const setStatus = useMutation({
+		mutationFn: async (status) => {
+			const res = await fetch(`/api/issues/${issueNumber}`, {
 				method: "PUT",
-				headers: {
-					"content-type": "application/json",
-				},
+				headers: { "content-type": "application/json" },
 				body: JSON.stringify({ status }),
-			}).then((res) => res.json());
-		},
-		{
-			onMutate: (status) => {
-				const oldStatus = queryClient.getQueryData(["issues", issueNumber]).status;
+			});
 
-				queryClient.setQueryData(["issues", issueNumber], (data) => ({ ...data, status }));
-
-				return function rollback() {
-					queryClient.setQueryData(["issues", issueNumber], (data) => ({
-						...data,
-						status: oldStatus,
-					}));
-				};
-			},
-			onError: (error, variables, rollback) => {
-				rollback();
-			},
-			onSetteled: () => {
-				queryClient.invalidateQueries(["issues", issueNumber], { exact: true });
-			},
+			return res.json();
 		},
-	);
+		onMutate: async (status) => {
+			await queryClient.cancelQueries({
+				queryKey: ["issues", issueNumber],
+			});
+
+			const previousIssue = queryClient.getQueryData(["issues", issueNumber]);
+
+			queryClient.setQueryData(["issues", issueNumber], (old) => ({ ...old, status }));
+
+			return { previousIssue };
+		},
+		onError: (_err, _status, context) => {
+			if (context?.previousIssue) {
+				queryClient.setQueryData(["issues", issueNumber], context.previousIssue);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["issues", issueNumber],
+				exact: true,
+			});
+		},
+	});
 
 	return (
 		<div className="issue-options">

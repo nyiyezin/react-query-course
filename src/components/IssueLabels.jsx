@@ -1,67 +1,67 @@
 import { GoGear } from "react-icons/go";
 import { useState } from "react";
 import { useLabelsData } from "../helpers/useLabelsData";
-import { useMutation, useQueryClient } from "react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function IssueLabels({ labels, issueNumber }) {
 	const labelsQuery = useLabelsData();
 	const [menuOpen, setMenuOpen] = useState(false);
-
 	const queryClient = useQueryClient();
 
-	const setLabels = useMutation(
-		(labelId) => {
+	const setLabels = useMutation({
+		mutationFn: async (labelId) => {
 			const newLabels = labels.includes(labelId)
-				? labels.filter((currentLabel) => currentLabel !== labelId)
+				? labels.filter((l) => l !== labelId)
 				: [...labels, labelId];
-			return fetch(`/api/issues/${issueNumber}`, {
+
+			const res = await fetch(`/api/issues/${issueNumber}`, {
 				method: "PUT",
-				headers: {
-					"content-type": "application/json",
-				},
+				headers: { "content-type": "application/json" },
 				body: JSON.stringify({ labels: newLabels }),
-			}).then((res) => res.json());
+			});
+
+			return res.json();
 		},
-		{
-			onMutate: (labelId) => {
-				const oldLabels = queryClient.getQueryData(["issues", issueNumber]).labels;
+		onMutate: async (labelId) => {
+			await queryClient.cancelQueries({
+				queryKey: ["issues", issueNumber],
+			});
 
-				const newLabels = oldLabels.includes(labelId)
-					? oldLabels.filter((label) => label !== labelId)
-					: [...oldLabels, labelId];
+			const previousIssue = queryClient.getQueryData(["issues", issueNumber]);
+			const oldLabels = previousIssue?.labels || [];
 
-				queryClient.setQueryData(["issues", issueNumber], (data) => ({
-					...data,
-					labels: newLabels,
-				}));
+			const newLabels = oldLabels.includes(labelId)
+				? oldLabels.filter((l) => l !== labelId)
+				: [...oldLabels, labelId];
 
-				return function rollback() {
-					queryClient.setQueryData(["issues", issueNumber], (data) => {
-						const rollbackLabels = oldLabels.includes(labelId)
-							? [...data.labels, labelId]
-							: data.labels.filter((label) => label !== labelId);
+			queryClient.setQueryData(["issues", issueNumber], (old) => ({
+				...old,
+				labels: newLabels,
+			}));
 
-						return { ...data, labels: rollbackLabels };
-					});
-				};
-			},
-			onError: (error, variables, rollback) => {
-				rollback();
-			},
-			onSetteled: (data) => {
-				queryClient.invalidateQueries(["issues", issueNumber], { exact: true });
-			},
+			return { previousIssue };
 		},
-	);
+		onError: (_err, _labelId, context) => {
+			if (context?.previousIssue) {
+				queryClient.setQueryData(["issues", issueNumber], context.previousIssue);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["issues", issueNumber],
+				exact: true,
+			});
+		},
+	});
 
 	return (
 		<div className="issue-options">
 			<div>
 				<span>Labels</span>
-				{labelsQuery.isLoading
+				{labelsQuery.isPending
 					? null
 					: labels.map((label) => {
-							const labelObject = labelsQuery.data.find((queryLabel) => queryLabel.id === label);
+							const labelObject = labelsQuery.data.find((l) => l.id === label);
 							if (!labelObject) return null;
 							return (
 								<span key={label} className={`label ${labelObject.color}`}>
@@ -70,7 +70,9 @@ export default function IssueLabels({ labels, issueNumber }) {
 							);
 						})}
 			</div>
-			<GoGear onClick={() => !labelsQuery.isLoading && setMenuOpen((open) => !open)} />
+
+			<GoGear onClick={() => !labelsQuery.isPending && setMenuOpen((open) => !open)} />
+
 			{menuOpen && (
 				<div className="picker-menu labels">
 					{labelsQuery.data?.map((label) => {

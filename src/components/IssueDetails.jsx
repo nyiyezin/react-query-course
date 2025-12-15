@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useUserData } from "../helpers/useUserData";
 import { IssueHeader } from "./IssueHeader";
@@ -10,32 +10,31 @@ import useScrollToBottomAction from "../helpers/useScrollToBottomAction";
 import Loader from "./Loader";
 
 function useIssueData(issueNumber) {
-	return useQuery(["issues", issueNumber], ({ signal }) => {
-		return fetch(`/api/issues/${issueNumber}`, { signal }).then((res) => res.json());
+	return useQuery({
+		queryKey: ["issues", issueNumber],
+		queryFn: ({ signal }) =>
+			fetch(`/api/issues/${issueNumber}`, { signal }).then((res) => res.json()),
 	});
 }
 
 function useIssueComments(issueNumber) {
-	return useInfiniteQuery(
-		["issues", issueNumber, "comments"],
-		({ signal, pageParam = 1 }) => {
-			return fetch(`/api/issues/${issueNumber}/comments?page=${pageParam}`, { signal }).then(
-				(res) => res.json(),
-			);
+	return useInfiniteQuery({
+		queryKey: ["issues", issueNumber, "comments"],
+		queryFn: ({ signal, pageParam = 1 }) =>
+			fetch(`/api/issues/${issueNumber}/comments?page=${pageParam}`, { signal }).then((res) =>
+				res.json(),
+			),
+		getNextPageParam: (lastPage, pages) => {
+			if (lastPage.length === 0) return undefined;
+			return pages.length + 1;
 		},
-		{
-			getNextPageParam: (lastPage, pages) => {
-				if (lastPage.length === 0) return;
-				return pages.length + 1;
-			},
-		},
-	);
+	});
 }
 
 function Comment({ comment, createdBy, createdDate }) {
 	const userQuery = useUserData(createdBy);
 
-	if (userQuery.isLoading)
+	if (userQuery.isPending)
 		return (
 			<div className="comment">
 				<div>
@@ -66,14 +65,14 @@ export default function IssueDetails() {
 
 	return (
 		<div className="issue-details">
-			{issueQuery.isLoading ? (
+			{issueQuery.isPending ? (
 				<p>Loading issue...</p>
 			) : (
 				<>
 					<IssueHeader {...issueQuery.data} />
 					<main>
 						<section>
-							{commentsQuery.isLoading ? (
+							{commentsQuery.isPending ? (
 								<p>Loading...</p>
 							) : (
 								commentsQuery.data?.pages.map((commentPage) =>

@@ -5,6 +5,7 @@ const possibleStatus = [
 	{ id: "done", label: "Done" },
 	{ id: "cancelled", label: "Cancelled" },
 ];
+
 export function StatusSelect({ value, onChange, noEmptyOption = false }) {
 	return (
 		<select value={value} onChange={onChange} className="status-select">

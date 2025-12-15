@@ -1,4 +1,4 @@
-import { useIsFetching } from "react-query";
+import { useIsFetching } from "@tanstack/react-query";
 import Loader from "./Loader";
 
 export default function FetchingIndicator() {
